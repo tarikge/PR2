@@ -1,0 +1,340 @@
+// parcispitv7.cpp : This file contains the 'main' function. Program execution begins and ends there.
+//
+
+#include <iostream>
+#include <functional>
+
+using namespace std;
+
+
+char* alocirajTekst(const char* sadrzaj) {
+    if (sadrzaj == nullptr)
+        return nullptr;
+    char* temp = new char[strlen(sadrzaj) + 1];
+    strcpy_s(temp, strlen(sadrzaj) + 1, sadrzaj);
+    return temp;
+}
+
+class Datum {
+    int* _dan=nullptr, *_mjesec=nullptr, *_godina=nullptr;
+public:
+    Datum(int dan = 1, int mjesec = 1, int godina = 2000) {
+        setDan(dan);
+        setMjesec(mjesec);
+        setGodina(godina);
+    }
+    //ctor copy
+    Datum(const Datum& obj) {
+        setDan(obj.getDan());
+        setMjesec(obj.getMjesec());
+        setGodina(obj.getGodina());
+    }
+    ~Datum(){
+        delete _dan, delete _mjesec, delete _godina;
+        _dan = _mjesec = _godina = nullptr;
+    }
+
+    int getDan() const { return(_dan == nullptr) ? 1 : *_dan; }
+    int getMjesec () const { return(_mjesec == nullptr) ? 1 : *_mjesec; }
+    int getGodina() const { return(_godina == nullptr) ? 2023 : *_godina; }
+
+    void setDan(int dan) {
+        if (_dan == nullptr)
+            _dan = new int;
+        *_dan = dan;
+    }
+    void setMjesec(int mjesec) {
+        if (_mjesec == nullptr)
+            _mjesec = new int;
+        *_mjesec = mjesec;
+    }
+    void setGodina(int godina) {
+        if (_godina == nullptr)
+            _godina = new int;
+        *_godina = godina;
+    }
+
+    friend ostream& operator<< (ostream& COUT, const Datum& obj) {
+        COUT << obj.getDan() << "." << obj.getMjesec() << "." << obj.getGodina();
+        return COUT;
+    }
+    Datum& operator= (const Datum& obj) {
+        if (this != &obj) {
+            setDan(obj.getDan());
+            setMjesec(obj.getMjesec());
+            setGodina(obj.getGodina());
+        }
+        return *this;
+    }
+    friend bool operator==(const Datum& d1, const Datum& d2) {
+        return (d1.getGodina() == d2.getGodina() && d1.getMjesec() == d2.getMjesec() && d1.getDan() == d2.getDan());
+    }
+    friend bool operator!=(const Datum& d1, const Datum& d2) {
+        return !(d1 == d2);
+    }
+
+};
+template<class T1, class T2>
+class Kolekcija {
+    T1* _elementi1 = nullptr;
+    T2* _elementi2 = nullptr;
+    int _trenutno = 0;
+    int _maxElemenata = 10;
+public:
+
+    Kolekcija(int maxElemenata = 10) {
+        setElementi(0, maxElemenata);
+    }
+    Kolekcija(const Kolekcija<T1, T2>& obj) {
+        setElementi(obj.getTrenutno(), obj.getMaxElemenata(), obj.getElementi1(), obj.getElementi2());
+    }
+
+    Kolekcija<T1, T2>& operator=(const Kolekcija<T1, T2>& obj) {
+        if (this != &obj) {
+            setElementi(obj.getTrenutno(), obj.getMaxElemenata(), obj.getElementi1(), obj.getElementi2());
+        }
+        return *this;
+    }
+    int getTrenutno() const { return _trenutno;}
+    int getMaxElemenata() const { return _maxElemenata; }
+    T1* getElementi1() const { return _elementi1; }
+    T2* getElementi2() const { return _elementi2; }
+
+    void setElementi(int trenutno, int maxElemenata, T1* elementi1 = nullptr, T2* elementi2=nullptr) {
+        delete[] _elementi1, delete[] _elementi2;
+        _trenutno = 0;
+        _maxElemenata = maxElemenata;
+        _elementi1 = new T1[maxElemenata];
+        _elementi2 = new T2[maxElemenata];
+        if (elementi1 != nullptr && elementi2 != nullptr)
+            for (int i = 0; i < trenutno; i++)
+                addElement(elementi1[i], elementi2[i]);
+  
+  }
+    void addElement(T1 element1, T2 element2) {
+        if (_trenutno == _maxElemenata)
+            expandElementi(10);
+        _elementi1[_trenutno] = element1;
+        _elementi2[_trenutno] = element2;
+        _trenutno++;
+    }
+
+    void expandElementi(int uvecanje) {
+        if (uvecanje <= 0)
+            return;
+        T1* temp1 = _elementi1;
+        T2* temp2 = _elementi2;
+        _maxElemenata += uvecanje;
+     
+        _elementi1 = new T1[_maxElemenata];
+        _elementi2 = new T2[_maxElemenata];
+
+        for (int i = 0; i < _trenutno; i++)
+        {
+            _elementi1[i] = temp1[i];
+            _elementi2[i] = temp2[i];
+        }
+        delete[] temp1, delete[] temp2;
+    }
+    T1& getElement1(int lokacija) const { return _elementi1[lokacija]; }
+    T2& getElement2(int lokacija) const { return _elementi2[lokacija]; }
+    
+    friend bool operator==(const Kolekcija<T1, T2>& k1, const Kolekcija<T1, T2>& k2) {
+        if (k1.getTrenutno() != k2.getTrenutno())
+            return false;
+        for (int i = 0; i < k1.getTrenutno(); i++)
+        {
+            if (k1.getElement1(i) != k2.getElement1(i) || k1.getElement2(i) != k2.getElement2(i))
+                return false;
+        }
+        return true;
+    }
+    Kolekcija<T1, T2> operator() (int from, int to) {
+        Kolekcija<T1, T2> novaKolekcija;
+        for (int i = from; i <= to; i++)
+        {
+            novaKolekcija.addElement(_elementi1[i], _elementi2[i]);
+        }
+        return novaKolekcija;
+    }
+};
+template<class T1, class T2>
+bool operator !=(const Kolekcija<T1, T2>& k1, const Kolekcija<T1, T2>& k2) {
+    return !(k1 == k2);
+}
+template<class T1, class T2>
+ostream& operator<<(ostream& COUT, const Kolekcija<T1,T2>& obj) {
+    for (int i = 0; i < obj.getTrenutno(); i++)
+    {
+        COUT << obj.getElement1(i) << " " << obj.getElement2(i) << endl;
+    }
+    return COUT;
+}
+int GetRandomBroj(int a, int b) {
+    return rand() % b + a;
+}
+
+class Predmet {
+    const char* _naziv;
+    char* _detalji;
+    char _akademskaGodina[100]="";
+    unique_ptr<int> _brojECTS;
+    Kolekcija<int, Datum>* _ocjene = nullptr;
+public:
+    Predmet(const char* naziv="", const char* detalji="", const char* akademskaGodina="", int brojECTS=5) {
+        setNaziv(naziv);
+        setDetalji(detalji);
+        setAkademskaGodina(akademskaGodina);
+        setbrojECTS(brojECTS);
+    }
+    Predmet(const Predmet& obj) {
+        setNaziv(obj.getNaziv());
+        setDetalji(obj.getDetalje());
+        setAkademskaGodina(obj.getAkademskaGodina());
+        setbrojECTS(obj.getBrojECTS());
+        setOcjene(obj.getOcjene());
+    }
+    ~Predmet() {
+        delete[] _naziv;
+        delete[] _detalji;
+        delete _ocjene;
+    }
+
+    const char* getNaziv() const { return(_naziv == nullptr) ? "" : _naziv; }
+    const char* getDetalje() const { return(_detalji == nullptr) ? "" : _detalji; }
+    const char* getAkademskaGodina() const { return _akademskaGodina; }
+    int getBrojECTS() const {
+        return(_brojECTS == nullptr) ? 0 : *_brojECTS;
+    }
+    Kolekcija<int, Datum> getOcjene() const {
+        return((_ocjene == nullptr) ? Kolekcija<int, Datum>() : *_ocjene);
+    }
+
+    void setNaziv(const char* naziv) {
+        delete[] _naziv;
+        _naziv = alocirajTekst(naziv);
+    }
+
+    void setDetalji(const char* detalji) {
+        delete[] _detalji;
+        _detalji = alocirajTekst(detalji);
+    }
+
+    void setAkademskaGodina(const char* akademskaGodina) {
+        strcpy_s(_akademskaGodina, sizeof(_akademskaGodina), akademskaGodina);
+    }
+
+    void setbrojECTS(int ects) {
+        if (_brojECTS == nullptr)
+            _brojECTS.reset(new int); 
+        *_brojECTS = ects;//make_unique<int>() *_brojECTS=ects;
+    }
+
+    void setOcjene(Kolekcija<int, Datum> ocjene) {
+        if (_ocjene == nullptr)
+            _ocjene = new Kolekcija<int, Datum>;
+        *_ocjene = ocjene;
+    }
+
+    void addOcjena(int ocjena, Datum datum) {
+        if (_ocjene == nullptr)
+            _ocjene = new Kolekcija<int, Datum>();
+        _ocjene->addElement(ocjena, datum);
+    }
+
+    
+};
+
+ostream& operator<<(ostream& COUT, const Predmet& predmet) {
+    COUT << predmet.getNaziv() << endl;
+    COUT << predmet.getDetalje() << endl;
+    COUT << predmet.getAkademskaGodina() << endl;
+    COUT << predmet.getBrojECTS() << endl;
+    COUT << predmet.getOcjene() << endl;
+    return COUT;
+}
+
+bool operator ==(const Predmet& p1, const Predmet& p2) {
+    return strcmp(p1.getNaziv(), p2.getNaziv()) == 0
+        && strcmp(p1.getDetalje(), p2.getDetalje()) == 0
+        && strcmp(p1.getAkademskaGodina(), p2.getAkademskaGodina()) == 0
+        && p1.getBrojECTS() == p2.getBrojECTS()
+        && p1.getOcjene() == p2.getOcjene();
+}
+
+function<float(int[], int)> aritmetickaSredina = [](int niz[], int velicina)->float {
+    float suma = 0.0f;
+    if (velicina == 0)
+        return suma;
+    for (int i = 0; i < velicina; i++)
+    {
+        suma += niz[i];
+    }
+    return suma / velicina;
+};
+
+function<float(int[], int)> geometrijskaSredina = [](int niz[], int velicina)->float {
+    float produkt = 1.0f;
+    if (velicina == 0)
+        return 0;
+    for (int i = 0; i < velicina; i++)
+    {
+        produkt *= niz[i];
+    }
+    return pow(produkt,(1.0f/velicina));
+};
+
+function<float(int[], int)> aritmetickaSredina = [](int niz[], int velicina)->float {
+    float suma = 0.0f;
+    if (velicina == 0)
+        return suma;
+    for (int i = 0; i < velicina; i++)
+    {
+        suma += niz[i];
+    }
+    return suma / velicina;
+};
+int main()
+{
+    Datum d1(1, 1, 1999);
+    Datum d2(2, 4, 2020);
+    Kolekcija<Datum, int> ocjene;
+    ocjene.addElement(d1, 10);
+    ocjene.addElement(d2, 5);
+    ocjene.addElement(d1, 6);
+    ocjene.addElement(d2, 8);
+    cout << ocjene << endl;
+
+    Kolekcija<Datum, int> ocjene2(ocjene);
+    cout << ((ocjene == ocjene2) ? "Kol sa ist vri" : "Kol sa raz vri") << endl;
+
+    Kolekcija<Datum, int> ocjene3;
+    ocjene3 = ocjene;
+    cout << ((ocjene == ocjene3) ? "Kol sa ist v" : "Kol sa raz v") << endl;
+
+    int kolekcijaTestSize = 9;
+    Kolekcija<int, int> brojevi;
+    for (int i = 0; i <= kolekcijaTestSize; i++)
+    {
+        int broj1 = GetRandomBroj(1, 3);
+        int broj2 = GetRandomBroj(1, 3);
+        brojevi.addElement(broj1, broj2);
+    }
+    cout << brojevi << endl;
+
+    Kolekcija<int, int> brojevi2 = brojevi(1, 4);
+    cout << brojevi2 << endl;
+
+    Predmet operativniSistemi("Operativni sistemi", "neki detalji", "2020/2021", 7), diskretnaMatematika("Diskretna matematika", "neki drugi detalji", "2020/2021", 6), programiranje1("Pr1", "abc", "2222", 7);
+    programiranje1.addOcjena(7, Datum(5, 4, 2021));
+    programiranje1.addOcjena(8, Datum(11, 4, 2021));
+    programiranje1.addOcjena(10, Datum(26, 4, 2021));
+
+    cout << operativniSistemi << endl;
+    cout << programiranje1;
+
+    Predmet pr1(programiranje1);
+    cout << ((pr1 == programiranje1) ? "Obj sa ist vri" : "obj sa raz vri") << endl;
+}
+
+
